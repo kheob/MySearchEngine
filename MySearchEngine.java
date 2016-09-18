@@ -1,3 +1,10 @@
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+
 /**
  * Main class for the MySearchEngine program.
  *
@@ -37,6 +44,7 @@ public class MySearchEngine {
             }
         } else if (args[0].equals("search")) {
             // TODO: Search
+
             System.out.println("Search");
 
         } else {
@@ -50,6 +58,47 @@ public class MySearchEngine {
         // Get Indexer
         Indexer indexer = new Indexer(stopwordsPath);
 
+        // Go through the collection path
+        Path collection = Paths.get(collectionPath);
 
+        // Create file
+        if (!Files.exists(Paths.get("test.txt"))) {
+            try {
+                Files.createFile(Paths.get("test.txt"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Empty the file
+        try {
+            Files.write(Paths.get("test.txt"), "".getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Walk through files at a path
+        // Adapted from: http://stackoverflow.com/a/1846349/6601606
+        try {
+            Files.walk(collection).forEach(documentPath -> {
+                if (Files.isRegularFile(documentPath)) {
+                    // Tokenise a document
+                    ArrayList<String> tokens = indexer.tokeniseDocument(documentPath);
+
+                    // Write string to file
+                    for (String token : tokens) {
+                        try {
+                            Files.write(Paths.get("test.txt"), (token + "\n").getBytes(), StandardOpenOption.APPEND);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Collection directory doesn't contain any documents.");
+            System.exit(1);
+        }
     }
 }
