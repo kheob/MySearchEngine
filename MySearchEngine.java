@@ -71,6 +71,7 @@ public class MySearchEngine {
         }
 
         // Empty the file
+        // Test
         try {
             Files.write(Paths.get("test.txt"), "".getBytes());
         } catch (IOException e) {

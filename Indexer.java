@@ -1,5 +1,6 @@
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,10 +22,12 @@ public class Indexer {
 
     // Properties
     private String[] stopwords;
+    Stemmer stemmer; // Porter Stemmer (Source: https://tartarus.org/martin/PorterStemmer/)
 
     // Default constructor
     public Indexer(String stopwordsFilepath) {
         stopwords = this.readStopwords(stopwordsFilepath);
+        Stemmer stemmer = new Stemmer();
     }
 
     // Reads a file containing stopwords and stores them in a property
@@ -54,7 +57,7 @@ public class Indexer {
 
     // Tokenises a document and returns an arraylist of tokens
     public ArrayList<String> tokeniseDocument(Path path) {
-        ArrayList<String> tokens = new ArrayList<>();
+        ArrayList<String> tokens;
         StringBuilder sb = new StringBuilder();
 
         // Read the file
@@ -83,8 +86,16 @@ public class Indexer {
         // Normalise the tokens
         tokens = this.normaliseTokens(tokens);
 
+        // Remove commas
+        tokens = this.removeCommas(tokens);
+
         // Remove the stopwords
-        tokens = this.removeStopwords(tokens);
+        this.removeStopwords(tokens);
+
+        // Remove empty tokens that resulted from normalisation
+        this.removeEmptyTokens(tokens);
+
+        // TODO: Stem
 
         return tokens;
     }
@@ -94,7 +105,7 @@ public class Indexer {
     // http://stackoverflow.com/a/16746437/6601606
     // http://stackoverflow.com/a/16053961/6601606
     // http://stackoverflow.com/a/1500501/6601606
-    public ArrayList<String> tokeniseString(String string) {
+    private ArrayList<String> tokeniseString(String string) {
         ArrayList<String> tokens = new ArrayList<>();
 
         // Regex that tokenises based on the rules of the assignment
@@ -131,7 +142,7 @@ public class Indexer {
     }
 
     // Normalise an arraylist of tokens
-    public ArrayList<String> normaliseTokens(ArrayList<String> tokens) {
+    private ArrayList<String> normaliseTokens(ArrayList<String> tokens) {
         ArrayList<String> normalisedTokens = new ArrayList<>();
 
         // Normalise to lower case and add
@@ -144,7 +155,7 @@ public class Indexer {
     }
 
     // Remove stop words
-    public ArrayList<String> removeStopwords(ArrayList<String> tokens) {
+    private void removeStopwords(ArrayList<String> tokens) {
         Iterator<String> it = tokens.iterator();
         List<String> stopwords = Arrays.asList(this.stopwords);
         while (it.hasNext()) {
@@ -152,8 +163,40 @@ public class Indexer {
                 it.remove();
             }
         }
+    }
 
-        return tokens;
+    // Remove empty tokens from a provided list
+    private void removeEmptyTokens(ArrayList<String> tokens) {
+        Iterator<String> it = tokens.iterator();
+        while (it.hasNext()) {
+            if (it.next().equals("")) {
+                it.remove();
+            }
+        }
+    }
+
+    // Remove commas from each token in an arraylist as they are used as delimiters
+    private ArrayList<String> removeCommas(ArrayList<String> tokens) {
+        ArrayList<String> newTokens = new ArrayList<>();
+        for (String s : tokens) {
+            if (s.contains(",")) {
+                s = s.replace(",", "");
+            }
+            newTokens.add(s);
+        }
+
+        return newTokens;
+    }
+
+    // Stems an arraylist of tokens
+    // TODO: Unfinished
+    private ArrayList<String> stemTokens(ArrayList<String> tokens) {
+        ArrayList<String> stemmedTokens = new ArrayList<>();
+        for (String token : tokens) {
+            stemmedTokens.add(token);
+        }
+
+        return stemmedTokens;
     }
 
     /**
