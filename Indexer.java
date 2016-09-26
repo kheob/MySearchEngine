@@ -1,13 +1,9 @@
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,12 +18,12 @@ public class Indexer {
 
     // Properties
     private String[] stopwords;
-    Stemmer stemmer; // Porter Stemmer (Source: https://tartarus.org/martin/PorterStemmer/)
+    private HashMap<String, HashMap<String, Integer>> index;
 
     // Default constructor
     public Indexer(String stopwordsFilepath) {
         stopwords = this.readStopwords(stopwordsFilepath);
-        Stemmer stemmer = new Stemmer();
+        index = new HashMap<>();
     }
 
     // Reads a file containing stopwords and stores them in a property
@@ -95,9 +91,42 @@ public class Indexer {
         // Remove empty tokens that resulted from normalisation
         this.removeEmptyTokens(tokens);
 
-        // TODO: Stem
+        // Stem the tokens
+        tokens = this.stemTokens(tokens);
 
         return tokens;
+    }
+
+    // Takes an arraylist of string and indexes it
+    public void indexDocument(String documentName, ArrayList<String> documentTokens) {
+        for (String token : documentTokens) {
+            if (!this.index.containsKey(token)) {
+                // Create a key with that token
+                this.index.put(token, new HashMap<>());
+            }
+
+            // Get the HashMap associated with that term
+            HashMap<String, Integer> term = this.index.get(token);
+
+            // Check if term has a posting for the document
+            if (term.containsKey(documentName)) {
+                // Increase its occurrence by 1
+                int occurrences = term.get(documentName);
+                term.put(documentName, ++occurrences);
+            } else {
+                // Create a new posting for the term
+                term.put(documentName, 1);
+            }
+        }
+    }
+
+    // Computes the IDF for a given term
+    // IDF formula denominator +1 to stop divide by zero errors
+    public double computeIDF(HashMap<String, Integer> termPostings, int documents) {
+        // Document frequency is the number of postings
+        int df = termPostings.size();
+
+        return Math.log(((double) documents) / (df + 1));
     }
 
     // Find tokens with consecutive capitals and within quotes, emails, urls, and IPs
@@ -188,12 +217,24 @@ public class Indexer {
         return newTokens;
     }
 
-    // Stems an arraylist of tokens
-    // TODO: Unfinished
+    // Stems an arraylist of tokens using the Porter Stemmer
+    // Porter Stemmer (Source: https://tartarus.org/martin/PorterStemmer/)
     private ArrayList<String> stemTokens(ArrayList<String> tokens) {
         ArrayList<String> stemmedTokens = new ArrayList<>();
         for (String token : tokens) {
-            stemmedTokens.add(token);
+            Stemmer stemmer = new Stemmer();
+            // Add each character into the stemmer
+            for (int i = 0; i < token.length(); i++) {
+                stemmer.add(token.charAt(i));
+            }
+
+            // Stem the token
+            stemmer.stem();
+
+            // Retrieve the stemmed token
+            String stemmedToken = stemmer.toString();
+
+            stemmedTokens.add(stemmedToken);
         }
 
         return stemmedTokens;
@@ -204,5 +245,13 @@ public class Indexer {
      */
     public String[] getStopwords() {
         return this.stopwords;
+    }
+
+    public HashMap<String, HashMap<String, Integer>> getIndex() {
+        return index;
+    }
+
+    public void setIndex(HashMap<String, HashMap<String, Integer>> index) {
+        this.index = index;
     }
 }
