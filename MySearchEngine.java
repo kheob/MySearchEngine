@@ -9,6 +9,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Main class for the MySearchEngine program.
@@ -31,7 +32,6 @@ public class MySearchEngine {
 
         // Check if any arguments given
         if (args.length == 0) {
-            // TODO: Show help
             System.out.println("Error: No arguments given. Type 'java MySearchEngine -h' for help.");
             System.exit(1);
         }
@@ -48,13 +48,33 @@ public class MySearchEngine {
                 System.exit(1);
             }
         } else if (args[0].equals("search")) {
-            // TODO: Search
+            // Check if right number of arguments given
+            if (args.length >= 4) {
+                // Join the query string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 3; i < args.length; i++) {
+                    sb.append(args[i] + " ");
+                }
 
-            System.out.println("Search");
+                // Parse number of results
+                int numberOfResults = 0;
+                try {
+                    numberOfResults = Integer.parseInt(args[2]);
+                } catch (Exception e) {
+                    System.out.println("Error: Incorrect number format for number of results to retrieve.");
+                    System.exit(1);
+                }
+
+                // Perform search
+                mySearchEngine.search(args[1], numberOfResults, sb.toString().trim());
+            } else {
+                System.out.println("Error: Wrong arguments given. Type 'java MySearchEngine -h' for help.");
+                System.exit(1);
+            }
         } else if (args[0].equals("-h")) {
-            System.out.println("Usage:\n" +
-                    "Indexing: 'java MySearchEngine index COLLECTION_DIR INDEX_DIR STOPWORDS.TXT_PATH'\n" +
-                    "Searching: 'java MySearchEngine search INDEX_DIR NUMBER_OF_RESULTS KEYWORD1 [KEYWORD2 ... KEYWORDN]'");
+            System.out.println("=== Indexing ===: \nUsage: 'java MySearchEngine index COLLECTION_DIR INDEX_DIR STOPWORDS.TXT_PATH'\n\n" +
+                    "=== Searching ===: \nUsage: 'java MySearchEngine search INDEX_DIR NUMBER_OF_RESULTS KEYWORD1 [KEYWORD2 ... KEYWORDN]'\n\n" +
+                    "=== Help ===: \nQuerying: To use multiple words as one term, either type the words as capital case (e.g. Monash University), \nor enclose the words with escaped single quotes (e.g. \\'monash university\\')");
         } else {
             System.out.println("Error: Command not found. Type 'java MySearchEngine -h' for help.");
         }
@@ -162,5 +182,31 @@ public class MySearchEngine {
             System.out.println("Error: Collection directory doesn't contain any documents.");
             System.exit(1);
         }
+    }
+
+    // Search an index at the specified location with a query
+    private void search(String indexPath, int numberOfResults, String queryString) {
+        // Read the index
+        List<String> indexRows = new ArrayList<>();
+        try {
+            indexRows = Files.readAllLines(Paths.get(indexPath + "/index.txt"));
+        } catch (Exception e) {
+            System.out.println("Error: Index doesn't exist at the specified location.");
+            System.exit(1);
+        }
+
+        // Create new searcher object with the index
+        Searcher searcher = new Searcher(indexRows);
+
+        // Get new indexer object so we can pre-process the query string
+        Indexer indexer = new Indexer();
+
+        // Tokenise the query
+        ArrayList<String> queryTokens = indexer.tokeniseQuery(queryString);
+
+        // Create a query vector
+        List<Double> queryVector = searcher.createQueryVector(queryTokens);
+
+        System.out.println(queryVector.toString());
     }
 }

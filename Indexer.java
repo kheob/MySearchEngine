@@ -26,6 +26,11 @@ public class Indexer {
         index = new HashMap<>();
     }
 
+    public Indexer() {
+        stopwords = new String[0];
+        index = new HashMap<>();
+    }
+
     // Reads a file containing stopwords and stores them in a property
     private String[] readStopwords(String filepath) {
         // Get filepath
@@ -49,6 +54,32 @@ public class Indexer {
         String[] wordsArray = new String[words.size()];
         wordsArray = words.toArray(wordsArray);
         return wordsArray;
+    }
+
+    // Tokenises a query and returns an arraylist of tokens
+    public ArrayList<String> tokeniseQuery(String query) {
+        ArrayList<String> tokens;
+
+        System.out.println(query);
+
+        tokens = this.tokeniseString(query);
+
+        // Normalise the tokens
+        tokens = this.normaliseTokens(tokens);
+
+        // Remove commas
+        tokens = this.removeCommas(tokens);
+
+        // Remove the stopwords
+        this.removeStopwords(tokens);
+
+        // Remove empty tokens that resulted from normalisation
+        this.removeEmptyTokens(tokens);
+
+        // Stem the tokens
+        tokens = this.stemTokens(tokens);
+
+        return tokens;
     }
 
     // Tokenises a document and returns an arraylist of tokens
@@ -126,7 +157,7 @@ public class Indexer {
         // Document frequency is the number of postings
         int df = termPostings.size();
 
-        return Math.log(((double) documents) / (df + 1));
+        return Math.log(((double) documents) / (df + 0));
     }
 
     // Find tokens with consecutive capitals and within quotes, emails, urls, and IPs
