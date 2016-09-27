@@ -1,6 +1,0 @@
-plai,doc4.txt,1,doc5.txt,1,0.917
-mous,doc4.txt,1,doc3.txt,1,doc2.txt,1,0.511
-rat,doc4.txt,1,1.61
-cat,doc4.txt,1,doc5.txt,2,doc1.txt,1,0.511
-eat,doc3.txt,1,doc1.txt,2,0.917
-dog,doc1.txt,1,doc2.txt,1,0.917

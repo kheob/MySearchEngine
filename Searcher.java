@@ -66,12 +66,6 @@ public class Searcher {
                 // Insert into vector array
                 this.vectors.get(document).add(tfidf);
             });
-
-            System.out.println(term.substring(0, term.indexOf(",")));
-        });
-
-        vectors.forEach((doc, weight) -> {
-            System.out.println(doc + ": " + weight);
         });
     }
 
@@ -108,6 +102,32 @@ public class Searcher {
         });
 
         return queryVector;
+    }
+
+    // Compute cosine similarity for two given vectors
+    public double computeCosineSimilarity(List<Double> query, List<Double> document) {
+        double dotProduct = 0.0;
+        double docLengthSquared = 0.0;
+        double queryLengthSquared = 0.0;
+
+        // Computations for each dimension
+        for (int i = 0; i < query.size(); i++) {
+            double w = document.get(i);
+            double q = query.get(i);
+
+            dotProduct += w * q;
+            docLengthSquared += w * w;
+            queryLengthSquared += q * q;
+        }
+
+        // Square root the sums to get the document and query lengths
+        double docLength = Math.sqrt(docLengthSquared);
+        double queryLength = Math.sqrt(queryLengthSquared);
+
+        // Compute the cosine similarity
+        double cosineSim = dotProduct / (docLength * queryLength);
+
+        return cosineSim;
     }
 
     /**

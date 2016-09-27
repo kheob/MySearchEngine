@@ -60,8 +60,6 @@ public class Indexer {
     public ArrayList<String> tokeniseQuery(String query) {
         ArrayList<String> tokens;
 
-        System.out.println(query);
-
         tokens = this.tokeniseString(query);
 
         // Normalise the tokens
@@ -157,7 +155,7 @@ public class Indexer {
         // Document frequency is the number of postings
         int df = termPostings.size();
 
-        return Math.log(((double) documents) / (df + 0));
+        return Math.log(((double) documents) / (df + 1));
     }
 
     // Find tokens with consecutive capitals and within quotes, emails, urls, and IPs

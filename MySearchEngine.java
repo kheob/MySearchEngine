@@ -6,10 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Main class for the MySearchEngine program.
@@ -138,7 +136,7 @@ public class MySearchEngine {
         // Walk through files at a path
         // Adapted from: http://stackoverflow.com/a/1846349/6601606
         try {
-            Files.walk(collection).forEach(documentPath -> {
+            Files.walk(collection).forEachOrdered(documentPath -> {
                 if (Files.isRegularFile(documentPath)) {
                     // Tokenise a document
                     ArrayList<String> tokens = indexer.tokeniseDocument(documentPath);
@@ -186,6 +184,8 @@ public class MySearchEngine {
 
     // Search an index at the specified location with a query
     private void search(String indexPath, int numberOfResults, String queryString) {
+        System.out.println("Searching for query: '" + queryString + "' in [" + indexPath + "]...");
+
         // Read the index
         List<String> indexRows = new ArrayList<>();
         try {
@@ -207,6 +207,54 @@ public class MySearchEngine {
         // Create a query vector
         List<Double> queryVector = searcher.createQueryVector(queryTokens);
 
-        System.out.println(queryVector.toString());
+        // Compute cosine similarity for each document and the query
+        HashMap<String, List<Double>> documentVectors = searcher.getVectors();
+        HashMap<String, Double> rankedResults = new HashMap<>();
+
+        documentVectors.forEach((documentName, documentVector) -> {
+            double cosineSim = searcher.computeCosineSimilarity(queryVector, documentVector);
+
+            // Added to hashmap
+            rankedResults.put(documentName, cosineSim);
+        });
+
+        // Sort the hashmap
+        // Source :http://stackoverflow.com/a/19671853/6601606
+        Map<String, Double> sortedResults =
+                rankedResults.entrySet().stream()
+                        .sorted(Map.Entry.comparingByValue(Collections.reverseOrder()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                                (e1, e2) -> e1, LinkedHashMap::new));
+
+        // Format the cosine sim
+        DecimalFormat df = new DecimalFormat("#.###");
+        df.setRoundingMode(RoundingMode.CEILING);
+
+        // Add sorted results to an array
+        ArrayList<String> sortedResultsArray = new ArrayList<>();
+        sortedResults.forEach((documentName, cosineSim) -> {
+            // Only add if word exists in the document
+            if (cosineSim > 0.0) {
+                sortedResultsArray.add(documentName + "," + df.format(cosineSim));
+            }
+        });
+
+        // Show message if not enough results found
+        int resultsToPrint = numberOfResults;
+        if (sortedResultsArray.size() < numberOfResults) {
+            resultsToPrint = sortedResultsArray.size();
+            if (sortedResultsArray.size() == 0) {
+                System.out.println("Sorry, no results could be found matching your query. Please try again.");
+            } else {
+                System.out.println("You requested " + numberOfResults + " results, but only " + sortedResultsArray.size() + " results were found matching your query:");
+            }
+        } else {
+            System.out.println("Showing top " + numberOfResults + " results:");
+        }
+
+        // Print out top results
+        for (int i = 0; i < resultsToPrint; i++) {
+            System.out.println(sortedResultsArray.get(i));
+        }
     }
 }
