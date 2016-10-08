@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Class that handles all the search functionality for the MySearchEngine program.
@@ -128,6 +125,64 @@ public class Searcher {
         double cosineSim = dotProduct / (docLength * queryLength);
 
         return cosineSim;
+    }
+
+    // Performs relevance feedback
+    // Uses Rocchio's Algorithm
+    // Weight of relevant is 0.5, weight is non relevant is 0.25
+    public List<Double> performRelevanceFeedback(HashMap<String, List<Double>> resultVectors, List<Double> queryVector) {
+        List<List<Double>> relevant = new ArrayList<>();
+        List<List<Double>> nonRelevant = new ArrayList<>();
+
+        // Loop through documents
+        resultVectors.forEach((docName, vector) -> {
+            System.out.print("Is the document '" + docName + "' relevant? (y/n): ");
+            Scanner scanner = new Scanner(System.in);
+            char answer = scanner.next().charAt(0);
+            if (answer == 'y') {
+                // Add to list of relevant vectors
+                relevant.add(vector);
+            } else {
+                // Add to list of non relevant vectors
+                nonRelevant.add(vector);
+            }
+        });
+
+        // Compute the relevant and non relevant centroids
+        List<Double> relevantCentroid = new ArrayList<>();
+        List<Double> nonRelevantCentroid = new ArrayList<>();
+        int vocabSize = queryVector.size();
+        for (int i = 0; i < vocabSize; i++) {
+            // Relevant
+            double relevantSum = 0.0;
+            for (List<Double> vector : relevant) {
+                relevantSum += vector.get(i);
+            }
+            double relevantAverage = 0.0;
+            if (relevant.size() > 0) {
+                relevantAverage = relevantSum / relevant.size();
+            }
+            relevantCentroid.add(relevantAverage);
+
+            // Non relevant
+            double nonRelevantSum = 0.0;
+            for (List<Double> vector : nonRelevant) {
+                nonRelevantSum += vector.get(i);
+            }
+            double nonRelevantAverage = 0.0;
+            if (nonRelevant.size() > 0) {
+                nonRelevantAverage = nonRelevantSum / nonRelevant.size();
+            }
+            nonRelevantCentroid.add(nonRelevantAverage);
+        }
+
+        // Add relevant centroid to query vector
+        List<Double> newQueryVector = new ArrayList<>();
+        for (int i = 0; i < vocabSize; i++) {
+            newQueryVector.add(queryVector.get(i) + (0.5 * relevantCentroid.get(i)) + (0.25 * nonRelevantCentroid.get(i)));
+        }
+
+        return newQueryVector;
     }
 
     /**

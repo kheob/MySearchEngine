@@ -207,6 +207,12 @@ public class MySearchEngine {
         // Create a query vector
         List<Double> queryVector = searcher.createQueryVector(queryTokens);
 
+        // Do the search
+        performSearch(searcher, queryVector, numberOfResults);
+    }
+
+    // Does the calculations and performs the search, printing out the results
+    private void performSearch(Searcher searcher, List<Double> queryVector, int numberOfResults) {
         // Compute cosine similarity for each document and the query
         HashMap<String, List<Double>> documentVectors = searcher.getVectors();
         HashMap<String, Double> rankedResults = new HashMap<>();
@@ -245,16 +251,43 @@ public class MySearchEngine {
             resultsToPrint = sortedResultsArray.size();
             if (sortedResultsArray.size() == 0) {
                 System.out.println("Sorry, no results could be found matching your query. Please try again.");
+                System.exit(0);
             } else {
                 System.out.println("You requested " + numberOfResults + " results, but only " + sortedResultsArray.size() + " results were found matching your query:");
             }
         } else {
-            System.out.println("Showing top " + numberOfResults + " results:");
+            System.out.println("\n===== Showing top " + numberOfResults + " results: =====");
         }
 
         // Print out top results
         for (int i = 0; i < resultsToPrint; i++) {
             System.out.println(sortedResultsArray.get(i));
+        }
+
+        // Ask the user if they wish to provide relevance feedback
+        System.out.print("\nWould you like to perform relevance feedback for a better set of results? (y/n): ");
+        Scanner scanner = new Scanner(System.in);
+        char answer = scanner.next().charAt(0);
+        if (answer == 'y') {
+            // Add the document vectors to a map
+            HashMap<String, List<Double>> resultVectors = new HashMap<>();
+            int vectorsToAdd = resultsToPrint;
+            sortedResults.forEach((documentName, cosineSim) -> {
+                // Only add if word exists in the document
+                if (cosineSim > 0.0) {
+                    if (resultVectors.size() < vectorsToAdd) {
+                        resultVectors.put(documentName, documentVectors.get(documentName));
+                    }
+                }
+            });
+
+            // Do relevance feedback
+            List<Double> newQueryVector = searcher.performRelevanceFeedback(resultVectors, queryVector);
+
+            // Perform a new search
+            performSearch(searcher, newQueryVector, numberOfResults);
+        } else {
+            System.exit(0);
         }
     }
 }
