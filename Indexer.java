@@ -1,5 +1,6 @@
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,16 +20,21 @@ public class Indexer {
     // Properties
     private String[] stopwords;
     private HashMap<String, HashMap<String, Integer>> index;
+    private HashMap<String, String> localisation;
 
     // Default constructor
     public Indexer(String stopwordsFilepath) {
         stopwords = this.readStopwords(stopwordsFilepath);
         index = new HashMap<>();
+        localisation = new HashMap<>();
+        readLocalisation();
     }
 
     public Indexer() {
         stopwords = new String[0];
         index = new HashMap<>();
+        localisation = new HashMap<>();
+        readLocalisation();
     }
 
     // Reads a file containing stopwords and stores them in a property
@@ -61,6 +67,9 @@ public class Indexer {
         ArrayList<String> tokens;
 
         tokens = this.tokeniseString(query);
+
+        // Localise
+        tokens = this.localiseTokens(tokens);
 
         // Normalise the tokens
         tokens = this.normaliseTokens(tokens);
@@ -107,6 +116,9 @@ public class Indexer {
         // Tokenise the string
         String documentString = sb.toString();
         tokens = this.tokeniseString(documentString);
+
+        // Localise
+        tokens = this.localiseTokens(tokens);
 
         // Normalise the tokens
         tokens = this.normaliseTokens(tokens);
@@ -267,6 +279,40 @@ public class Indexer {
         }
 
         return stemmedTokens;
+    }
+
+    // Reads the localisation file
+    // Source of spelling differences: http://www.tysto.com/uk-us-spelling-list.html
+    private void readLocalisation() {
+        ArrayList<String> linesArray = new ArrayList<>();
+        try {
+            Files.readAllLines(Paths.get("localisation.txt")).forEach(line -> {
+                linesArray.add(line);
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // Split into two arrays
+        List<String> british = linesArray.subList(0, linesArray.size()/2);
+        List<String> american = linesArray.subList(linesArray.size()/2, linesArray.size());
+
+        // Put into hashmap
+        for (int i = 0; i < british.size(); i++) {
+            this.localisation.put(british.get(i), american.get(i));
+        }
+    }
+
+    // Converts all British spellings to American spellings for better indexing
+    private ArrayList<String> localiseTokens(ArrayList<String> tokens) {
+        for (int i = 0; i < tokens.size(); i++) {
+            // Check if token is a key
+            if (this.localisation.containsKey(tokens.get(i))) {
+                // Convert to American
+                tokens.set(i, this.localisation.get(tokens.get(i)));
+            }
+        }
+
+        return tokens;
     }
 
     /**
